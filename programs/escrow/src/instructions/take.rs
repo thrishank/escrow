@@ -6,8 +6,6 @@ use anchor_spl::{
 
 use crate::Offer;
 
-use super::transfer_tokens;
-
 #[derive(Accounts)]
 pub struct Take<'info> {
     #[account(mut)]
@@ -67,15 +65,19 @@ pub struct Take<'info> {
 }
 
 
-pub fn send_tokens_maker(ctx: &Context<Take>) -> Result<()> {
-    transfer_tokens(
-        &ctx.accounts.taker,
-        &ctx.accounts.token_program, 
-        &ctx.accounts.escrow.amount, 
-        &ctx.accounts.taker_token,
-        &ctx.accounts.maker_token_ata_mint_b, 
-        &ctx.accounts.taker_token_ata_mint_b
-    )
+pub fn send_tokens_maker(ctx: &Context<Take>) -> Result<()> { 
+    let transfer_accounts = TransferChecked {
+        from: ctx.accounts.taker_token_ata_mint_b.to_account_info(),
+        to: ctx.accounts.maker_token_ata_mint_b.to_account_info(),
+        mint: ctx.accounts.taker_token.to_account_info(), 
+        authority: ctx.accounts.taker.to_account_info()
+    };
+
+    let cpi_transfer = CpiContext::new(
+        ctx.accounts.token_program.to_account_info(), 
+        transfer_accounts
+    );
+    transfer_checked(cpi_transfer, ctx.accounts.escrow.amount, ctx.accounts.taker_token.decimals)
 }
 
 pub fn withdraw_close_escrow(ctx: Context<Take>) -> Result<()> {

@@ -1,11 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
-use anchor_spl::token_interface::{TokenInterface, Mint, TokenAccount};
+use anchor_spl::token_interface::{TokenInterface,TransferChecked, transfer_checked, Mint, TokenAccount};
 
 use crate::Offer;
 use crate::ANCHOR_DISCRIMINATOR;
-
-use super::transfer_tokens;
 
 #[derive(Accounts)]
 #[instruction(id: u64)]
@@ -61,13 +59,14 @@ pub fn create_offer(ctx: Context<Make>, id:u64, amount:u64) -> Result<()> {
     });
     Ok(())
 }
-pub fn send_tokens_to_vault(ctx: &Context<Make>, amount:u64) -> Result<()> {
-    transfer_tokens(
-        &ctx.accounts.maker,
-        &ctx.accounts.token_program,
-        &amount,
-        &ctx.accounts.mint_a,
-        &ctx.accounts.vault,
-        &ctx.accounts.maker_token_ata
-    )
+pub fn send_tokens_to_vault(ctx: &Context<Make>, amount:u64) -> Result<()> { 
+    let transfer_accounts = TransferChecked {
+        from: ctx.accounts.maker_token_ata.to_account_info(),
+        to: ctx.accounts.vault.to_account_info(),
+        mint: ctx.accounts.mint_a.to_account_info(),
+        authority: ctx.accounts.maker.to_account_info()
+    };
+    let cpi_transfer = CpiContext::new(ctx.accounts.token_program.to_account_info(), transfer_accounts);
+
+    transfer_checked(cpi_transfer, amount, ctx.accounts.mint_a.decimals)
 }
