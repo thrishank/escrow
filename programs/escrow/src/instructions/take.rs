@@ -100,7 +100,7 @@ pub fn withdraw_close_escrow(ctx: Context<Take>) -> Result<()> {
         &signer_seeds
     );
 
-   transfer_checked(cpi, ctx.accounts.escrow.amount, ctx.accounts.maker_token.decimals); 
+   transfer_checked(cpi, ctx.accounts.escrow.amount, ctx.accounts.maker_token.decimals)?; 
 
     let accounts = CloseAccount {
         account: ctx.accounts.vault_mint_a.to_account_info(),
